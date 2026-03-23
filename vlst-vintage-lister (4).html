@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VLST — Vintage Lister</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060608; --surface: #0e0e12; --surface2: #14141a;
+    --border: #1c1c26; --border-hover: #2a2a38;
+    --text: #e8e6f0; --text-dim: #7a7890; --text-muted: #4a4860;
+    --accent: #a8ff78; --accent-dim: #a8ff7822; --accent-mid: #a8ff7844;
+    --danger: #ff5c5c; --danger-dim: #ff5c5c22;
+    --radius: 10px; --radius-lg: 14px;
+    --font: 'Outfit', -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#2a2a38;border-radius:10px}
+  .nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--bg);border-bottom:1px solid var(--border)}
+  .nav-brand{display:flex;align-items:baseline;gap:10px}
+  .nav-logo{font-family:var(--mono);font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-0.06em}
+  .nav-sub{font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:0.12em;text-transform:uppercase}
+  .nav-tabs{display:flex;gap:2px;background:var(--surface);border-radius:8px;padding:3px;border:1px solid var(--border)}
+  .nav-tab{padding:7px 16px;border-radius:6px;border:none;background:transparent;color:var(--text-dim);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+  .nav-tab:hover{color:var(--text)}.nav-tab.active{background:var(--surface2);color:var(--accent);font-weight:600}
+  .nav-tab .badge{background:var(--accent-dim);color:var(--accent);padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;font-family:var(--mono)}
+  .hamburger{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer}
+  .mobile-menu{display:none;position:fixed;top:56px;left:0;right:0;background:var(--surface);border-bottom:1px solid var(--border);z-index:99;padding:8px}
+  .mobile-menu.open{display:block}
+  .mobile-menu button{display:block;width:100%;padding:14px 16px;border:none;background:transparent;color:var(--text-dim);font-family:var(--font);font-size:15px;font-weight:500;text-align:left;cursor:pointer;border-radius:8px}
+  .mobile-menu button.active{background:var(--surface2);color:var(--accent)}
+  @media(max-width:640px){.nav-tabs{display:none}.hamburger{display:block}}
+  .container{max-width:880px;margin:0 auto;padding:24px 16px 60px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:14px}
+  .card-title{font-size:15px;font-weight:600;margin-bottom:4px}
+  .card-sub{font-size:12px;color:var(--text-muted);margin-bottom:16px}
+  .field{margin-bottom:14px}.field-row{display:grid;gap:12px;margin-bottom:14px}
+  .field-row-2{grid-template-columns:1fr 1fr}.field-row-3{grid-template-columns:1fr 1fr 1fr}
+  @media(max-width:500px){.field-row-3,.field-row-2{grid-template-columns:1fr}}
+  label.lbl{display:block;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px}
+  input.inp,textarea.inp,select.inp{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:14px;transition:border-color .2s}
+  input.inp:focus,textarea.inp:focus,select.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+  textarea.inp{resize:vertical;min-height:160px;line-height:1.6}select.inp{cursor:pointer}
+  .char-count{font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-top:4px}
+  .check-row{display:flex;gap:20px;margin:14px 0;flex-wrap:wrap}
+  .check-row label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);cursor:pointer}
+  .check-row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+  .btn{padding:10px 20px;border-radius:var(--radius);border:none;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+  .btn-primary{background:var(--accent);color:#080a06;font-weight:700}
+  .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .btn-ghost{background:var(--surface2);color:var(--text-dim);border:1px solid var(--border)}
+  .btn-ghost:hover{border-color:var(--border-hover);color:var(--text)}
+  .btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+  .btn-danger:hover{background:var(--danger-dim)}
+  .btn-full{width:100%;justify-content:center}.btn-lg{padding:14px 24px;font-size:15px;border-radius:12px}
+  .btn-ai{width:100%;padding:16px;border-radius:12px;border:none;font-family:var(--font);font-size:15px;font-weight:800;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#a8ff78 0%,#78ffd6 100%);color:#060608;letter-spacing:-0.01em;box-shadow:0 4px 24px #a8ff7833;margin-bottom:16px}
+  .btn-ai:hover{transform:translateY(-2px);box-shadow:0 8px 32px #a8ff7844}
+  .btn-ai:disabled{background:var(--surface2);color:var(--text-muted);box-shadow:none;cursor:wait;transform:none}
+  .spinner{display:inline-block;width:18px;height:18px;border:2.5px solid var(--text-muted);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+  @media(max-width:400px){.img-grid{grid-template-columns:repeat(3,1fr)}}
+  .img-slot{position:relative;aspect-ratio:1;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:var(--surface2)}
+  .img-slot img{width:100%;height:100%;object-fit:cover;display:block}
+  .img-slot .remove-btn{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:#000c;border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+  .img-slot:hover .remove-btn{opacity:1}
+  .img-slot .cover-badge{position:absolute;bottom:0;left:0;right:0;background:var(--accent);color:#060608;font-size:9px;font-weight:800;text-align:center;padding:2px 0;letter-spacing:0.08em}
+  .img-add{aspect-ratio:1;border-radius:var(--radius);border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;color:var(--text-muted);gap:4px}
+  .img-add:hover{border-color:var(--accent);color:var(--accent)}
+  .img-add span{font-size:28px;line-height:1}.img-add small{font-size:10px;font-weight:600}
+  .listing-card{display:flex;gap:14px;align-items:flex-start;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:8px;transition:all .2s}
+  .listing-card.selected{border-color:var(--accent-mid);background:#0e0e14}
+  .listing-thumb{width:60px;height:60px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--surface2)}
+  .listing-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .listing-info{flex:1;min-width:0}
+  .listing-title{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}
+  .listing-meta{font-size:11px;color:var(--text-muted);display:flex;gap:8px;flex-wrap:wrap}
+  .listing-actions{display:flex;gap:6px;flex-shrink:0}
+  .listing-actions button{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);font-family:var(--font);font-size:12px;cursor:pointer;transition:all .15s}
+  .listing-actions button:hover{border-color:var(--border-hover);color:var(--text)}
+  .listing-actions .del-btn{color:var(--danger)}.listing-actions .del-btn:hover{background:var(--danger-dim)}
+  .select-box{width:22px;height:22px;border-radius:6px;flex-shrink:0;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-top:2px;background:transparent}
+  .select-box.checked{border-color:var(--accent);background:var(--accent)}
+  .select-box.checked::after{content:'\2713';color:#060608;font-size:13px;font-weight:800}
+  .empty-state{text-align:center;padding:60px 20px}
+  .empty-state .icon{font-size:48px;margin-bottom:16px;opacity:.2}
+  .empty-state h3{font-size:18px;font-weight:600;margin-bottom:8px}
+  .empty-state p{color:var(--text-muted);font-size:14px}
+  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:var(--radius);font-size:13px;font-weight:700;z-index:1000;animation:toastIn .25s ease;font-family:var(--font);background:var(--accent);color:#060608;box-shadow:0 8px 24px #a8ff7844}
+  .toast.error{background:var(--danger);color:#fff;box-shadow:0 8px 24px #ff5c5c44}
+  @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  .page-header h1{font-size:26px;font-weight:800;letter-spacing:-0.03em;margin-bottom:4px}
+  .page-header p{color:var(--text-muted);font-size:13px}.page-header{margin-bottom:24px}
+  .info-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-top:24px}
+  .info-box h4{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text-dim)}
+  .info-box p{font-size:12px;color:var(--text-muted);line-height:1.8}
+  .review-bar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+  .review-bar .actions{display:flex;gap:8px;flex-wrap:wrap}
+  body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:.015;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  body>*{position:relative;z-index:1}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/heic-to@1.4.2/dist/iife/heic-to.js" onerror="console.warn('heic-to failed to load')"></script>
+<script src="https://unpkg.com/heic2any@0.0.4" onerror="console.warn('heic2any fallback failed to load')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+// ── DATA ──
+const COLORS=["Red","Pink","Orange","Yellow","Green","Blue","Purple","Gold","Silver","Black","Gray","White","Cream","Beige","Brown","Tan","Khaki","Turquoise","Apricot","Coral","Burgundy","Rose","Lilac","LightBlue","Navy","DarkGreen","Mustard","Mint","Multi","Clear"];
+const CONDITIONS=[{v:"NewWithTags",l:"New With Tags"},{v:"NewWithoutTags",l:"New Without Tags"},{v:"VeryGood",l:"Very Good"},{v:"Good",l:"Good"},{v:"Fair",l:"Fair"},{v:"Poor",l:"Poor"}];
+const WHO_MADE=["IDid","SomeoneElse","Collective"];
+const WHEN_MADE=["MadeToOrder","From2020To2026","From2010To2019","From2007To2009","From2000To2006","From1990s","From1980s","From1970s","From1960s","From1950s","From1940s","From1930s","From1920s","From1910s","From1900s","From1800s","From1700s","Before1700","Before2007"];
+const CATEGORIES=[
+  {l:"Men's Sweatshirts",id:"46397ead-6baa-4de7-3aa5-d3d9052f51a9"},{l:"Men's Hoodies",id:"71b638a8-235e-892a-7fbc-0831f1a907e1"},
+  {l:"All Men's Sweatshirts & Hoodies",id:"eb8e15d5-14a9-5282-6c81-1b2cdf378980"},{l:"Men's Crew Neck Sweaters",id:"9ee1a527-56c6-6a89-9abe-4e3b90114651"},
+  {l:"Men's Full Zip Sweaters",id:"5ac0783f-2b0e-40f4-5c60-773e8bc4166c"},{l:"Men's Fleece Jackets",id:"5a5b59ca-6483-1d11-2e78-8403873842dc"},
+  {l:"Men's Jackets (Activewear)",id:"1188aafb-450c-6f08-68e8-6dbd6e662784"},{l:"Men's Tracksuits",id:"4dd77941-8b84-9c55-85ca-62c437645669"},
+  {l:"Men's T-Shirts (Long Sleeve)",id:"bed3cf42-1887-747b-27c6-6450654d356f"},{l:"Men's T-Shirts (Short Sleeve)",id:"4b024732-289e-58a7-7694-c28964660969"},
+  {l:"Men's Polos",id:"53a08abc-4447-97e2-211b-4e5b23c79b26"},{l:"Men's Jerseys",id:"4af42b38-401d-15ff-a224-104949b25d5c"},
+  {l:"Men's Bomber Jackets",id:"ac7592c4-78c2-2b2c-5bd2-7598e1bb6f6b"},{l:"Men's Varsity Jackets",id:"06671d4d-36bd-7f9b-1fb9-024061bf0a8c"},
+  {l:"Men's Joggers",id:"9eb3f23d-a432-3e92-1c81-dc2433553332"},{l:"Men's Shorts",id:"9be9542a-1aa9-94e9-3a24-31232bd6733b"},
+  {l:"Men's Denim Jackets",id:"0b6009b3-0082-7581-7b4b-096e0b105294"},{l:"Men's Sweatpants",id:"aa8318fb-2dff-7a47-a4ea-1624d9d319e3"},
+  {l:"All Menswear",id:"4ccc808b-97f9-6650-1aa1-ddf98b1503e0"},
+];
+const MEN_SIZES=[{l:"XS",id:"89bd653f-03c1-62ed-5c80-80578f421878"},{l:"S",id:"78c1966f-1623-2e16-092e-b126ed286978"},{l:"M",id:"51fb40ab-9573-468e-1d52-be5be9d44e75"},{l:"L",id:"f9ea6dc9-36f2-458a-3070-f8947835429a"},{l:"XL",id:"471245b9-1139-0a68-77c5-a26a9e635e2f"},{l:"XXL",id:"e307171d-7e37-919c-42e5-6634573985a2"},{l:"XXXL",id:"3ff7287f-9598-0e52-4919-ba3e0bbf751f"}];
+const WOMEN_SIZES=[{l:"XS",id:"02d57f77-78f5-0f68-8e09-b5a195e78035"},{l:"S",id:"0a197135-09d9-7a16-9bc8-9fe09264a06a"},{l:"M",id:"fb288854-9af5-1e28-20b7-2837ee7b6aed"},{l:"L",id:"903b02f6-1f5a-36ed-6620-bfae7fb51f8f"},{l:"XL",id:"3d0d4408-03e4-6ea2-7468-c9d4a5540d55"},{l:"XXL",id:"2dbc1f0a-5296-9586-290a-b6cebe2757cb"},{l:"XXXL",id:"5a2bbf47-0d93-8e08-1aaf-8aba95445ad6"}];
+const CAT_MAP={sweatshirt:"46397ead-6baa-4de7-3aa5-d3d9052f51a9",hoodie:"71b638a8-235e-892a-7fbc-0831f1a907e1",quarter_zip:"5ac0783f-2b0e-40f4-5c60-773e8bc4166c",track_top:"4dd77941-8b84-9c55-85ca-62c437645669",fleece:"5a5b59ca-6483-1d11-2e78-8403873842dc",t_shirt:"bed3cf42-1887-747b-27c6-6450654d356f",jacket:"1188aafb-450c-6f08-68e8-6dbd6e662784",jersey:"4af42b38-401d-15ff-a224-104949b25d5c",joggers:"9eb3f23d-a432-3e92-1c81-dc2433553332"};
+const SIZE_MAP={};MEN_SIZES.forEach(s=>SIZE_MAP[s.l]=s.id);
+
+const AI_SYSTEM=`You are a vintage clothing listing generator for Depop and Vinted resale platforms. Follow these rules EXACTLY:
+
+TITLE FORMAT: Vintage + Era (Y2K or 1990s) + Brand + Key Feature + Item Type. Capitalise all major words. 40-65 characters. Keywords: Embroidered Logo, Quarter Zip, Three Stripe, Athletic Dept, Heavyweight, Boxy, Crewneck, Hoodie, Sweatshirt
+
+DESCRIPTION template:
+**[Title]**
+
+[One paragraph: trendy, streetwear-oriented, casual but descriptive. Highlight era, style, fit, branding, streetwear appeal. Use phrases like: Classic Y2K, Clean colourway, Early-2000s sportswear aesthetic, Retro gymwear, Streetwear layering piece, Relaxed boxy vintage fit, Soft fleece-lined interior, Iconic embroidered logo]
+
+**Size** – Men's [Size] (see exact measurements in photos)
+
+**Colour** – [Colour]
+
+**Condition** – [Condition description]
+
+#[hashtag1] #[hashtag2] #[hashtag3] #[hashtag4] #[hashtag5]
+
+RULES: Bold title in description. Use dash not colon. ONE paragraph only. Exactly 5 hashtags. Include Y2K. Simple colours. Always include "(see exact measurements in photos)".
+
+Respond ONLY with valid JSON, no markdown fences:
+{"title":"title without bold","description":"FULL description with bold markers size colour condition hashtags","hashtags":["t1","t2","t3","t4","t5"],"suggestedColor":"from allowed list","suggestedSecondaryColor":"or empty string","suggestedSize":"XS or S or M or L or XL or XXL or XXXL","suggestedCategory":"sweatshirt or hoodie or quarter_zip or track_top or fleece or t_shirt or jacket or jersey or joggers","suggestedCondition":"NewWithTags or NewWithoutTags or VeryGood or Good or Fair or Poor","suggestedEra":"From2000To2006 or From1990s or From2007To2009"}`;
+
+// ── STATE ──
+let S = {
+  page: 'create', listings: [], editingId: null, menuOpen: false,
+  images: [],  // Each: { name, dataUrl, apiB64, apiMime }
+  generating: false,
+  form: null, toast: null, toastType: 'success', toastTimer: null,
+  settings: { apiKey:'', defaultPrice:'25.00', defaultShippingWeight:'500', defaultShippingWeightUnit:'Grams' }
+};
+
+// In-memory cache (loaded from IndexedDB on startup)
+// Keyed by listing ID -> array of { name, dataUrl }
+var imageStore = {};
+
+// ── IndexedDB for image persistence ──
+var idb = null;
+function openIDB() {
+  return new Promise(function(resolve, reject) {
+    if (idb) { resolve(idb); return; }
+    var req = indexedDB.open('vlst_images', 1);
+    req.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains('images')) {
+        db.createObjectStore('images');
+      }
+    };
+    req.onsuccess = function(e) { idb = e.target.result; resolve(idb); };
+    req.onerror = function(e) { console.warn('IndexedDB open failed:', e); resolve(null); };
+  });
+}
+
+async function idbSaveImages(listingId, imagesArray) {
+  imageStore[listingId] = imagesArray;
+  try {
+    var db = await openIDB();
+    if (!db) return;
+    var tx = db.transaction('images', 'readwrite');
+    tx.objectStore('images').put(imagesArray, listingId);
+  } catch(e) { console.warn('IDB save failed:', e); }
+}
+
+async function idbLoadImages(listingId) {
+  if (imageStore[listingId]) return imageStore[listingId];
+  try {
+    var db = await openIDB();
+    if (!db) return null;
+    return new Promise(function(resolve) {
+      var tx = db.transaction('images', 'readonly');
+      var req = tx.objectStore('images').get(listingId);
+      req.onsuccess = function() {
+        var result = req.result || null;
+        if (result) imageStore[listingId] = result;
+        resolve(result);
+      };
+      req.onerror = function() { resolve(null); };
+    });
+  } catch(e) { return null; }
+}
+
+async function idbDeleteImages(listingId) {
+  delete imageStore[listingId];
+  try {
+    var db = await openIDB();
+    if (!db) return;
+    var tx = db.transaction('images', 'readwrite');
+    tx.objectStore('images').delete(listingId);
+  } catch(e) { console.warn('IDB delete failed:', e); }
+}
+
+async function idbClearAll() {
+  imageStore = {};
+  try {
+    var db = await openIDB();
+    if (!db) return;
+    var tx = db.transaction('images', 'readwrite');
+    tx.objectStore('images').clear();
+  } catch(e) { console.warn('IDB clear failed:', e); }
+}
+
+// Load all images from IndexedDB into memory cache on startup
+async function idbLoadAll() {
+  try {
+    var db = await openIDB();
+    if (!db) return;
+    return new Promise(function(resolve) {
+      var tx = db.transaction('images', 'readonly');
+      var store = tx.objectStore('images');
+      var req = store.openCursor();
+      req.onsuccess = function(e) {
+        var cursor = e.target.result;
+        if (cursor) {
+          imageStore[cursor.key] = cursor.value;
+          cursor.continue();
+        } else {
+          console.log('Loaded images for', Object.keys(imageStore).length, 'listings from IndexedDB');
+          resolve();
+        }
+      };
+      req.onerror = function() { resolve(); };
+    });
+  } catch(e) { console.warn('IDB load all failed:', e); }
+}
+
+function defForm() {
+  return {
+    title:'', description:'', price:S.settings.defaultPrice||'25.00', originalPrice:'',
+    brand:'', categoryId:'', sizeId:'', condition:'Good', color:'', secondaryColor:'',
+    hashtags:'', whenMade:'From2000To2006', whoMade:'SomeoneElse',
+    shippingWeight:S.settings.defaultShippingWeight||'500',
+    shippingWeightUnit:S.settings.defaultShippingWeightUnit||'Grams',
+    shippingHeight:'', shippingWidth:'', shippingLength:'',
+    freeShipping:true, acceptOffers:true, internalNote:''
+  };
+}
+
+// ── PERSISTENCE ──
+function saveLS() {
+  try {
+    // Don't save full images in listings — just thumbs
+    const slim = S.listings.map(function(l) {
+      var copy = {};
+      for (var k in l) { if (k !== '_imgFull') copy[k] = l[k]; }
+      return copy;
+    });
+    localStorage.setItem('vlst_listings', JSON.stringify(slim));
+  } catch(e) { console.warn('Save error:', e); }
+}
+function loadLS() { try { var d = localStorage.getItem('vlst_listings'); return d ? JSON.parse(d) : []; } catch(e) { return []; } }
+function saveSS() { try { localStorage.setItem('vlst_settings', JSON.stringify(S.settings)); } catch(e) {} }
+function loadSS() { try { var d = localStorage.getItem('vlst_settings'); return d ? JSON.parse(d) : null; } catch(e) { return null; } }
+
+S.listings = loadLS();
+var _ss = loadSS(); if (_ss) S.settings = Object.assign({}, S.settings, _ss);
+S.form = defForm();
+
+// ── HELPERS ──
+function uid() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); }
+function toast(m, t) {
+  if (S.toastTimer) clearTimeout(S.toastTimer);
+  S.toast = m; S.toastType = t || 'success';
+  render();
+  S.toastTimer = setTimeout(function() { S.toast = null; render(); }, 2800);
+}
+function csvE(v) { if (v == null) return ''; var s = String(v); return (s.indexOf(',')>-1||s.indexOf('"')>-1||s.indexOf('\n')>-1) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+function condL(v) { var c = CONDITIONS.find(function(x){return x.v===v;}); return c ? c.l : v; }
+function eraL(v) { return v.replace(/([A-Z])/g,' $1').replace('From ','').trim(); }
+function esc(s) { if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/**
+ * Detect if a file is HEIC/HEIF format.
+ * Checks MIME type, file extension, and uses heic-to's detection if available.
+ */
+function isHeicFile(file) {
+  var type = (file.type || '').toLowerCase();
+  var name = (file.name || '').toLowerCase();
+  return type === 'image/heic' || type === 'image/heif' ||
+         type === '' && (name.endsWith('.heic') || name.endsWith('.heif')) ||
+         name.endsWith('.heic') || name.endsWith('.heif');
+}
+
+/**
+ * Convert any image file to a JPEG base64 data URL.
+ * Handles: HEIC, HEIF, WEBP, PNG, TIFF, BMP, GIF, JPG — everything.
+ * HEIC/HEIF files are first converted via heic-to library.
+ * All others go through canvas for guaranteed JPEG output.
+ * Also resizes to max 1024px for the API payload.
+ * Returns: { dataUrl, apiB64, apiMime }
+ */
+async function processImage(file) {
+  var blobToProcess = file;
+
+  // Step 1: If HEIC/HEIF, convert to JPEG blob first
+  if (isHeicFile(file)) {
+    console.log('HEIC file detected:', file.name, 'type:', file.type, 'size:', file.size);
+
+    // Try heic-to library (IIFE global = HeicTo)
+    if (typeof HeicTo !== 'undefined') {
+      try {
+        console.log('Attempting HeicTo conversion...');
+        // The IIFE build exposes HeicTo as a callable function directly
+        var converted = await HeicTo({ blob: file, type: 'image/jpeg', quality: 0.85 });
+        if (converted && converted.size > 0) {
+          blobToProcess = converted;
+          console.log('HeicTo conversion succeeded, blob size:', blobToProcess.size);
+        } else {
+          throw new Error('Empty result from HeicTo');
+        }
+      } catch (err1) {
+        console.warn('HeicTo() direct call failed:', err1.message);
+        // Fallback: try as HeicTo.heicTo() in case API differs
+        try {
+          if (typeof HeicTo.heicTo === 'function') {
+            console.log('Trying HeicTo.heicTo() fallback...');
+            var converted2 = await HeicTo.heicTo({ blob: file, type: 'image/jpeg', quality: 0.85 });
+            if (converted2 && converted2.size > 0) {
+              blobToProcess = converted2;
+              console.log('HeicTo.heicTo() fallback succeeded');
+            } else {
+              throw new Error('Empty result');
+            }
+          } else {
+            throw new Error('HeicTo.heicTo is not a function');
+          }
+        } catch (err2) {
+          console.warn('HeicTo.heicTo() also failed:', err2.message);
+          // Fallback: try heic2any if it exists
+          if (typeof heic2any !== 'undefined') {
+            try {
+              console.log('Trying heic2any fallback...');
+              var converted3 = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+              blobToProcess = Array.isArray(converted3) ? converted3[0] : converted3;
+              console.log('heic2any fallback succeeded');
+            } catch (err3) {
+              console.error('All HEIC converters failed');
+              throw new Error('Could not convert ' + file.name + '. Please convert to JPG using your phone settings or an online converter before uploading.');
+            }
+          } else {
+            throw new Error('Could not convert ' + file.name + '. Please convert to JPG using your phone settings or an online converter before uploading.');
+          }
+        }
+      }
+    } else {
+      throw new Error('HEIC converter not loaded. Please convert ' + file.name + ' to JPG before uploading.');
+    }
+  }
+
+  // Step 2: Load blob into Image via object URL, draw to canvas, export JPEG
+  return new Promise(function(resolve, reject) {
+    var url = URL.createObjectURL(blobToProcess);
+    var img = new Image();
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      var MAX = 1024;
+      var w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var jpegDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      var apiB64 = jpegDataUrl.split(',')[1];
+      resolve({ dataUrl: jpegDataUrl, apiB64: apiB64, apiMime: 'image/jpeg' });
+    };
+    img.onerror = function() {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image: ' + file.name));
+    };
+    img.src = url;
+  });
+}
+
+// Also make a small thumbnail for saving in localStorage
+function makeThumb(dataUrl) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var s = 120;
+      var w = img.width, h = img.height;
+      if (w > h) { h = Math.round(h * s / w); w = s; }
+      else { w = Math.round(w * s / h); h = s; }
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', 0.6));
+    };
+    img.onerror = function() { resolve(null); };
+    img.src = dataUrl;
+  });
+}
+
+// ── RENDER ──
+function render() {
+  var a = document.getElementById('app');
+  var toastHtml = S.toast ? '<div class="toast '+(S.toastType==='error'?'error':'')+'">'+esc(S.toast)+'</div>' : '';
+
+  var navTabsHtml = ['create','review','settings'].map(function(p) {
+    var label = p==='create' ? '\uFF0B Create' : p==='review' ? '\u25CE Review'+(S.listings.length?' <span class="badge">'+S.listings.length+'</span>':'') : '\u2699 Settings';
+    return '<button class="nav-tab '+(S.page===p?'active':'')+'" data-nav="'+p+'">'+label+'</button>';
+  }).join('');
+
+  var mobileHtml = '';
+  if (S.menuOpen) {
+    mobileHtml = '<div class="mobile-menu open">' + ['create','review','settings'].map(function(p) {
+      var label = p==='create' ? '\uFF0B Create New Listing' : p==='review' ? '\u25CE Review ('+S.listings.length+')' : '\u2699 Settings';
+      return '<button class="'+(S.page===p?'active':'')+'" data-nav="'+p+'">'+label+'</button>';
+    }).join('') + '</div>';
+  }
+
+  var content = S.page==='create' ? rCreate() : S.page==='review' ? rReview() : rSettings();
+
+  a.innerHTML = toastHtml +
+    '<nav class="nav"><div class="nav-brand"><div class="nav-logo">VLST</div><div class="nav-sub">Vintage Lister</div></div>' +
+    '<div class="nav-tabs">' + navTabsHtml + '</div>' +
+    '<button class="hamburger" data-action="toggleMenu">'+(S.menuOpen?'\u2715':'\u2630')+'</button></nav>' +
+    mobileHtml +
+    '<div class="container">' + content + '</div>';
+
+  bind();
+}
+
+// ── CREATE ──
+function rCreate() {
+  var f = S.form, n = S.images.length;
+  var slots = '';
+  for (var i = 0; i < n; i++) {
+    slots += '<div class="img-slot">' +
+      '<img src="'+S.images[i].dataUrl+'" alt="">' +
+      '<button class="remove-btn" data-action="removeImg" data-idx="'+i+'">\u2715</button>' +
+      (i===0 ? '<div class="cover-badge">COVER</div>' : '') +
+      '</div>';
+  }
+  if (n < 8) {
+    slots += '<div class="img-add" data-action="addPhotos"><span>+</span><small>'+n+'/8</small></div>';
+  }
+
+  return '<div class="page-header"><h1>Create Listing</h1><p>Upload photos and let AI generate your listing</p></div>' +
+    '<div class="card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<div><div class="card-title">Photos</div><div style="font-size:12px;color:var(--text-muted)">'+n+'/8 images uploaded</div></div>' +
+        '<button class="btn btn-ghost" data-action="addPhotos">+ Add Photos</button>' +
+      '</div>' +
+      '<input type="file" id="fileInput" accept="image/*,.heic,.heif" multiple style="display:none">' +
+      '<div class="img-grid">'+slots+'</div>' +
+    '</div>' +
+    '<button class="btn-ai" '+(S.generating||n===0?'disabled':'')+' data-action="generate">' +
+      (S.generating ? '<span class="spinner"></span> Analysing images...' : '\u26A1 Generate with AI') +
+    '</button>' +
+    '<div class="card"><div class="card-title">Listing Details</div><div class="card-sub">Edit or fill in below</div>' +
+      fld('Title','title',f.title,'Vintage Y2K Adidas Three Stripe Crewneck Sweatshirt') +
+      '<div class="char-count">'+f.title.length+'/255</div>' +
+      '<div class="field"><label class="lbl">Description</label><textarea class="inp" data-field="description" placeholder="Full listing description...">'+esc(f.description)+'</textarea></div>' +
+      '<div class="field-row field-row-2">'+fldN('Price (\u00A3)','price',f.price)+fldN('Original Price (\u00A3)','originalPrice',f.originalPrice)+'</div>' +
+      fld('Brand','brand',f.brand,'e.g. Adidas, Nike, Reebok') +
+      '<div class="field-row field-row-2">'+sel('Category','categoryId',f.categoryId,CATEGORIES.map(function(c){return{v:c.id,l:c.l};})) + selSizes('Size','sizeId',f.sizeId) + '</div>' +
+      '<div class="field-row field-row-3">'+sel('Condition','condition',f.condition,CONDITIONS.map(function(c){return{v:c.v,l:c.l};})) + sel('Colour','color',f.color,COLORS.map(function(c){return{v:c,l:c};}),true) + sel('2nd Colour','secondaryColor',f.secondaryColor,COLORS.map(function(c){return{v:c,l:c};}),true) + '</div>' +
+      '<div class="field-row field-row-2">'+sel('Era','whenMade',f.whenMade,WHEN_MADE.map(function(w){return{v:w,l:eraL(w)};})) + sel('Who Made','whoMade',f.whoMade,WHO_MADE.map(function(w){return{v:w,l:w};})) + '</div>' +
+      fld('Hashtags (comma separated)','hashtags',f.hashtags,'adidas, y2k, streetwear, sportswear, vintage') +
+      '<div class="field-row field-row-3">'+fldN('Shipping Weight','shippingWeight',f.shippingWeight) + sel('Weight Unit','shippingWeightUnit',f.shippingWeightUnit,[{v:'Grams',l:'Grams'},{v:'Ounces',l:'Ounces'}]) + fld('Internal Note','internalNote',f.internalNote,'Private note') + '</div>' +
+      '<div class="check-row">' +
+        '<label><input type="checkbox" data-check="freeShipping"'+(f.freeShipping?' checked':'')+'> Free Shipping</label>' +
+        '<label><input type="checkbox" data-check="acceptOffers"'+(f.acceptOffers?' checked':'')+'> Accept Offers</label>' +
+      '</div>' +
+    '</div>' +
+    '<button class="btn btn-primary btn-full btn-lg" data-action="saveListing">Save to Review \u2192</button>';
+}
+
+function fld(label,key,val,ph) { return '<div class="field"><label class="lbl">'+label+'</label><input class="inp" data-field="'+key+'" value="'+esc(val)+'" placeholder="'+esc(ph||'')+'"></div>'; }
+function fldN(label,key,val) { return '<div><label class="lbl">'+label+'</label><input class="inp" type="number" step="0.01" data-field="'+key+'" value="'+esc(val)+'"></div>'; }
+function sel(label,key,val,opts,allowEmpty) {
+  var html = '<div><label class="lbl">'+label+'</label><select class="inp" data-field="'+key+'">';
+  if (allowEmpty) html += '<option value="">Select...</option>';
+  opts.forEach(function(o){ html += '<option value="'+esc(o.v)+'"'+(val===o.v?' selected':'')+'>'+esc(o.l)+'</option>'; });
+  html += '</select></div>';
+  return html;
+}
+function selSizes(label,key,val) {
+  var html = '<div><label class="lbl">'+label+'</label><select class="inp" data-field="'+key+'"><option value="">Select...</option>';
+  html += '<optgroup label="Men\'s">';
+  MEN_SIZES.forEach(function(s){ html += '<option value="'+s.id+'"'+(val===s.id?' selected':'')+'>'+s.l+'</option>'; });
+  html += '</optgroup><optgroup label="Women\'s">';
+  WOMEN_SIZES.forEach(function(s){ html += '<option value="'+s.id+'"'+(val===s.id?' selected':'')+'>'+s.l+'</option>'; });
+  html += '</optgroup></select></div>';
+  return html;
+}
+
+// ── REVIEW ──
+function rReview() {
+  var ls = S.listings, selC = ls.filter(function(l){return l.selected;}).length;
+  var allSel = ls.length > 0 && ls.every(function(l){return l.selected;});
+
+  if (S.editingId) {
+    var it = ls.find(function(l){return l.id===S.editingId;});
+    if (it) return rEdit(it);
+  }
+
+  if (!ls.length) return '<div class="empty-state"><div class="icon">\u25CE</div><h3>No Listings Yet</h3><p>Create your first listing to get started</p></div>';
+
+  var cards = '';
+  ls.forEach(function(l) {
+    var th = l.thumbData ? '<div class="listing-thumb"><img src="'+l.thumbData+'" alt=""></div>' : '';
+    cards += '<div class="listing-card'+(l.selected?' selected':'')+'">' +
+      '<div class="select-box'+(l.selected?' checked':'')+'" data-action="toggleSel" data-id="'+l.id+'"></div>' +
+      th +
+      '<div class="listing-info"><div class="listing-title">'+esc(l.title||'Untitled')+'</div>' +
+      '<div class="listing-meta"><span>\u00A3'+esc(l.price)+'</span>'+(l.brand?'<span>\u00B7 '+esc(l.brand)+'</span>':'')+(l.color?'<span>\u00B7 '+l.color+'</span>':'')+'<span>\u00B7 '+condL(l.condition)+'</span></div></div>' +
+      '<div class="listing-actions"><button data-action="editListing" data-id="'+l.id+'">Edit</button><button class="del-btn" data-action="deleteListing" data-id="'+l.id+'">\u2715</button></div></div>';
+  });
+
+  return '<div class="review-bar"><div><div class="page-header" style="margin-bottom:0"><h1>Review Listings</h1><p>'+ls.length+' listing(s) \u00B7 '+selC+' selected</p></div></div>' +
+    '<div class="actions"><button class="btn btn-ghost" data-action="selectAll">'+(allSel?'Deselect All':'Select All')+'</button>' +
+    '<button class="btn btn-primary"'+(selC===0?' disabled':'')+' data-action="exportCSV">Export CSV ('+selC+')</button></div></div>' + cards;
+}
+
+function rEdit(f) {
+  var th = f.thumbData ? '<div style="display:flex;gap:8px;margin-bottom:16px"><div style="width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)"><img src="'+f.thumbData+'" style="width:100%;height:100%;object-fit:cover;display:block"></div></div>' : '';
+
+  return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div class="card-title">Edit Listing</div><button class="btn btn-ghost" data-action="backToList">\u2190 Back</button></div>' +
+    th +
+    efld('Title','title',f.title) +
+    '<div class="field"><label class="lbl">Description</label><textarea class="inp" data-edit="description">'+esc(f.description)+'</textarea></div>' +
+    '<div class="field-row field-row-2">'+efldN('Price (\u00A3)','price',f.price)+efldN('Original Price','originalPrice',f.originalPrice)+'</div>' +
+    efld('Brand','brand',f.brand) +
+    '<div class="field-row field-row-2">'+esel('Category','categoryId',f.categoryId,CATEGORIES.map(function(c){return{v:c.id,l:c.l};}),true)+eselSizes('Size','sizeId',f.sizeId)+'</div>' +
+    '<div class="field-row field-row-3">'+esel('Condition','condition',f.condition,CONDITIONS.map(function(c){return{v:c.v,l:c.l};}))+esel('Colour','color',f.color,COLORS.map(function(c){return{v:c,l:c};}),true)+esel('2nd Colour','secondaryColor',f.secondaryColor,COLORS.map(function(c){return{v:c,l:c};}),true)+'</div>' +
+    '<div class="field-row field-row-2">'+esel('Era','whenMade',f.whenMade,WHEN_MADE.map(function(w){return{v:w,l:eraL(w)};}))+esel('Who Made','whoMade',f.whoMade,WHO_MADE.map(function(w){return{v:w,l:w};}))+'</div>' +
+    efld('Hashtags','hashtags',f.hashtags) +
+    '<div class="field-row field-row-2">'+efldN('Shipping Weight','shippingWeight',f.shippingWeight)+esel('Weight Unit','shippingWeightUnit',f.shippingWeightUnit,[{v:'Grams',l:'Grams'},{v:'Ounces',l:'Ounces'}])+'</div>' +
+    efld('Internal Note','internalNote',f.internalNote||'') +
+    '<div class="check-row"><label><input type="checkbox" data-editcheck="freeShipping"'+(f.freeShipping?' checked':'')+'> Free Shipping</label><label><input type="checkbox" data-editcheck="acceptOffers"'+(f.acceptOffers?' checked':'')+'> Accept Offers</label></div>' +
+    '<button class="btn btn-primary btn-full" data-action="backToList" style="margin-top:10px">Done Editing \u2713</button></div>';
+}
+
+function efld(label,key,val) { return '<div class="field"><label class="lbl">'+label+'</label><input class="inp" data-edit="'+key+'" value="'+esc(val)+'"></div>'; }
+function efldN(label,key,val) { return '<div><label class="lbl">'+label+'</label><input class="inp" type="number" step="0.01" data-edit="'+key+'" value="'+esc(val)+'"></div>'; }
+function esel(label,key,val,opts,allowEmpty) {
+  var html = '<div><label class="lbl">'+label+'</label><select class="inp" data-edit="'+key+'">';
+  if (allowEmpty) html += '<option value="">Select...</option>';
+  opts.forEach(function(o){ html += '<option value="'+esc(o.v)+'"'+(val===o.v?' selected':'')+'>'+esc(o.l)+'</option>'; });
+  return html + '</select></div>';
+}
+function eselSizes(label,key,val) {
+  var html = '<div><label class="lbl">'+label+'</label><select class="inp" data-edit="'+key+'"><option value="">Select...</option><optgroup label="Men\'s">';
+  MEN_SIZES.forEach(function(s){ html += '<option value="'+s.id+'"'+(val===s.id?' selected':'')+'>'+s.l+'</option>'; });
+  html += '</optgroup><optgroup label="Women\'s">';
+  WOMEN_SIZES.forEach(function(s){ html += '<option value="'+s.id+'"'+(val===s.id?' selected':'')+'>'+s.l+'</option>'; });
+  return html + '</optgroup></select></div>';
+}
+
+// ── SETTINGS ──
+function rSettings() {
+  var s = S.settings;
+  return '<div class="page-header"><h1>Settings</h1><p>Configure your API key and defaults</p></div>' +
+    '<div class="card"><div class="card-title">Anthropic API Key</div><div class="card-sub">Required for AI generation. Stored in your browser only.</div>' +
+    '<div style="position:relative"><input class="inp" type="password" id="apiKeyInput" value="'+esc(s.apiKey)+'" placeholder="sk-ant-api03-...">' +
+    '<button style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:12px;cursor:pointer;font-family:var(--font)" data-action="toggleKeyVis">Show</button></div>' +
+    '<button class="btn btn-primary" style="margin-top:12px" data-action="saveApiKey">Save Key</button></div>' +
+    '<div class="card"><div class="card-title">Default Values</div><div class="card-sub">Pre-fill when creating new listings</div>' +
+    '<div class="field-row field-row-3"><div><label class="lbl">Default Price (\u00A3)</label><input class="inp" type="number" step="0.01" id="defPrice" value="'+esc(s.defaultPrice)+'"></div>' +
+    '<div><label class="lbl">Default Weight</label><input class="inp" type="number" id="defWeight" value="'+esc(s.defaultShippingWeight)+'"></div>' +
+    '<div><label class="lbl">Weight Unit</label><select class="inp" id="defWeightUnit"><option value="Grams"'+(s.defaultShippingWeightUnit==='Grams'?' selected':'')+'>Grams</option><option value="Ounces"'+(s.defaultShippingWeightUnit==='Ounces'?' selected':'')+'>Ounces</option></select></div></div>' +
+    '<button class="btn btn-primary" data-action="saveDefaults">Save Defaults</button></div>' +
+    '<div class="card" style="border-color:#ff5c5c33"><div class="card-title" style="color:var(--danger)">Danger Zone</div><div class="card-sub">Clear all saved listings permanently</div>' +
+    '<button class="btn btn-danger" data-action="clearAll">Clear All Listings ('+S.listings.length+')</button></div>' +
+    '<div class="info-box"><h4>How It Works</h4><p>1. Add your Anthropic API key above<br>2. Create \u2014 upload up to 8 photos<br>3. "Generate with AI" analyses images via your API key<br>4. Review & tweak all fields<br>5. Tick ready items in Review<br>6. Export CSV for Crosslist<br>7. Data persists in browser between refreshes</p></div>';
+}
+
+// ── EVENTS ──
+function bind() {
+  document.querySelectorAll('[data-nav]').forEach(function(el) {
+    el.onclick = function() { S.page = el.dataset.nav; S.editingId = null; S.menuOpen = false; render(); window.scrollTo(0,0); };
+  });
+
+  document.querySelectorAll('[data-action]').forEach(function(el) {
+    var a = el.dataset.action;
+    if (a === 'toggleMenu') el.onclick = function() { S.menuOpen = !S.menuOpen; render(); };
+    if (a === 'addPhotos') el.onclick = function() { var fi = document.getElementById('fileInput'); if (fi) fi.click(); };
+    if (a === 'removeImg') el.onclick = function(e) { e.stopPropagation(); S.images.splice(parseInt(el.dataset.idx), 1); render(); };
+    if (a === 'generate') el.onclick = genAI;
+    if (a === 'saveListing') el.onclick = doSaveListing;
+    if (a === 'toggleSel') el.onclick = function() { var l = S.listings.find(function(x){return x.id===el.dataset.id;}); if(l) l.selected=!l.selected; saveLS(); render(); };
+    if (a === 'selectAll') el.onclick = function() { var all = S.listings.every(function(l){return l.selected;}); S.listings.forEach(function(l){l.selected=!all;}); saveLS(); render(); };
+    if (a === 'editListing') el.onclick = function() { S.editingId = el.dataset.id; render(); window.scrollTo(0,0); };
+    if (a === 'deleteListing') el.onclick = function() { if(confirm('Delete this listing?')){var did=el.dataset.id;idbDeleteImages(did);S.listings=S.listings.filter(function(l){return l.id!==did;});if(S.editingId===did)S.editingId=null;saveLS();render();toast('Listing deleted');} };
+    if (a === 'backToList') el.onclick = function() { S.editingId = null; render(); };
+    if (a === 'exportCSV') el.onclick = expCSV;
+    if (a === 'saveApiKey') el.onclick = function() { S.settings.apiKey = ((document.getElementById('apiKeyInput')||{}).value||'').trim(); saveSS(); toast('API key saved!'); };
+    if (a === 'toggleKeyVis') el.onclick = function() { var inp = document.getElementById('apiKeyInput'); if(inp){inp.type=inp.type==='password'?'text':'password';el.textContent=inp.type==='password'?'Show':'Hide';} };
+    if (a === 'saveDefaults') el.onclick = function() { S.settings.defaultPrice=(document.getElementById('defPrice')||{}).value||'25.00'; S.settings.defaultShippingWeight=(document.getElementById('defWeight')||{}).value||'500'; S.settings.defaultShippingWeightUnit=(document.getElementById('defWeightUnit')||{}).value||'Grams'; saveSS(); toast('Defaults saved!'); };
+    if (a === 'clearAll') el.onclick = function() { if(confirm('Delete ALL listings? Cannot undo.')){S.listings=[];idbClearAll();saveLS();render();toast('All listings cleared');} };
+  });
+
+  var fi = document.getElementById('fileInput');
+  if (fi) fi.onchange = handleFiles;
+
+  // Create page field bindings
+  document.querySelectorAll('[data-field]').forEach(function(el) {
+    el.addEventListener(el.tagName==='SELECT'?'change':'input', function() { S.form[el.dataset.field] = el.value; });
+  });
+  document.querySelectorAll('[data-check]').forEach(function(el) {
+    el.onchange = function() { S.form[el.dataset.check] = el.checked; };
+  });
+
+  // Edit page field bindings
+  document.querySelectorAll('[data-edit]').forEach(function(el) {
+    el.addEventListener(el.tagName==='SELECT'?'change':'input', function() {
+      var it = S.listings.find(function(l){return l.id===S.editingId;});
+      if (it) { it[el.dataset.edit] = el.value; saveLS(); }
+    });
+  });
+  document.querySelectorAll('[data-editcheck]').forEach(function(el) {
+    el.onchange = function() {
+      var it = S.listings.find(function(l){return l.id===S.editingId;});
+      if (it) { it[el.dataset.editcheck] = el.checked; saveLS(); }
+    };
+  });
+}
+
+// ── FILE UPLOAD ──
+async function handleFiles(e) {
+  var files = Array.from(e.target.files).slice(0, 8 - S.images.length);
+  for (var i = 0; i < files.length; i++) {
+    if (S.images.length >= 8) break;
+    try {
+      // Show feedback for HEIC conversion (takes a moment)
+      if (isHeicFile(files[i])) {
+        toast('Converting ' + files[i].name + '...');
+      }
+      var result = await processImage(files[i]);
+      // Rename HEIC files to .jpg for Crosslist compatibility
+      var name = files[i].name;
+      if (isHeicFile(files[i])) {
+        name = name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg');
+      }
+      S.images.push({
+        name: name,
+        dataUrl: result.dataUrl,
+        apiB64: result.apiB64,
+        apiMime: result.apiMime
+      });
+      // Render after each image so user sees progress
+      render();
+    } catch (err) {
+      console.error('Image process error:', err);
+      toast('Failed to load: ' + files[i].name + ' — ' + err.message, 'error');
+    }
+  }
+  e.target.value = '';
+  render();
+}
+
+// ── AI GENERATION ──
+async function genAI() {
+  // Trim the API key (mobile copy-paste often adds spaces/newlines)
+  var apiKey = (S.settings.apiKey || '').trim();
+  if (!apiKey) { toast('Add your API key in Settings first', 'error'); return; }
+  if (!S.images.length) { toast('Upload at least one image', 'error'); return; }
+
+  // Validate image data before sending
+  for (var vi = 0; vi < S.images.length && vi < 4; vi++) {
+    if (!S.images[vi].apiB64 || S.images[vi].apiB64.length < 100) {
+      toast('Image ' + (vi+1) + ' has invalid data — try re-uploading', 'error');
+      return;
+    }
+  }
+
+  S.generating = true;
+  render();
+
+  try {
+    // Build image payload — send up to 4 images
+    var imgPayload = [];
+    for (var ii = 0; ii < S.images.length && ii < 4; ii++) {
+      imgPayload.push({
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: S.images[ii].apiMime,
+          data: S.images[ii].apiB64
+        }
+      });
+    }
+
+    // Add text prompt
+    var msgContent = imgPayload.slice();
+    msgContent.push({
+      type: "text",
+      text: "Analyze these images of a vintage clothing item. Generate a complete listing following the system rules. Return ONLY valid JSON, no markdown fences or extra text."
+    });
+
+    var body = JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1500,
+      system: AI_SYSTEM,
+      messages: [{ role: "user", content: msgContent }]
+    });
+
+    console.log('Sending API request with', imgPayload.length, 'images, body size:', body.length);
+
+    var res;
+    try {
+      res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: body
+      });
+    } catch (fetchErr) {
+      // Safari/iOS often throws TypeError for CORS or network issues
+      console.error('Fetch error:', fetchErr);
+      toast('Network error — check your internet connection and API key. (' + (fetchErr.message || 'TypeError') + ')', 'error');
+      S.generating = false;
+      render();
+      return;
+    }
+
+    if (!res.ok) {
+      var errText = '';
+      try { errText = await res.text(); } catch(e) {}
+      console.error('API HTTP error:', res.status, errText);
+      toast('API Error ' + res.status + ': ' + (errText.slice(0, 100) || 'Unknown'), 'error');
+      S.generating = false;
+      render();
+      return;
+    }
+
+    var data;
+    try {
+      data = await res.json();
+    } catch (jsonErr) {
+      toast('Failed to parse API response', 'error');
+      S.generating = false;
+      render();
+      return;
+    }
+
+    console.log('API response:', data);
+
+    if (data.error) {
+      toast('API Error: ' + (data.error.message || JSON.stringify(data.error)), 'error');
+      S.generating = false;
+      render();
+      return;
+    }
+
+    var textBlock = null;
+    if (data.content) {
+      for (var ti = 0; ti < data.content.length; ti++) {
+        if (data.content[ti].type === 'text') { textBlock = data.content[ti]; break; }
+      }
+    }
+    if (!textBlock) {
+      toast('No text in API response', 'error');
+      S.generating = false;
+      render();
+      return;
+    }
+
+    var txt = textBlock.text;
+    var clean = txt.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    console.log('Cleaned response:', clean);
+
+    var p;
+    try {
+      p = JSON.parse(clean);
+    } catch (parseErr) {
+      toast('AI returned invalid JSON — try again', 'error');
+      console.error('JSON parse error:', parseErr, 'Raw:', clean);
+      S.generating = false;
+      render();
+      return;
+    }
+
+    var brand = '';
+    if (p.title) {
+      var m = p.title.match(/Vintage\s+(?:Y2K|1990s)\s+(\S+)/i);
+      if (m) brand = m[1];
+    }
+
+    S.form.title = p.title || S.form.title;
+    S.form.description = p.description || S.form.description;
+    S.form.brand = brand || S.form.brand;
+    S.form.hashtags = (p.hashtags || []).join(', ');
+    S.form.color = p.suggestedColor || S.form.color;
+    S.form.secondaryColor = p.suggestedSecondaryColor || '';
+    S.form.sizeId = SIZE_MAP[p.suggestedSize] || S.form.sizeId;
+    S.form.categoryId = CAT_MAP[p.suggestedCategory] || S.form.categoryId;
+    S.form.condition = p.suggestedCondition || S.form.condition;
+    S.form.whenMade = p.suggestedEra || S.form.whenMade;
+
+    toast('AI listing generated!');
+  } catch (err) {
+    console.error('Generation error:', err);
+    toast('Error: ' + (err.message || String(err)), 'error');
+  }
+
+  S.generating = false;
+  render();
+}
+
+// ── SAVE LISTING ──
+async function doSaveListing() {
+  var f = S.form;
+  if (!f.title) { toast('Title is required', 'error'); return; }
+  if (!f.price) { toast('Price is required', 'error'); return; }
+
+  // Make a small thumbnail for the review list
+  var thumbData = null;
+  if (S.images.length > 0) {
+    try {
+      thumbData = await makeThumb(S.images[0].dataUrl);
+    } catch(e) { thumbData = null; }
+  }
+
+  // Generate a listing ID
+  var listingId = uid();
+
+  // Create clean sequential image filenames and store full data in memory
+  var imageNames = [];
+  var imageDataForStore = [];
+  var slugBase = (f.brand || 'item').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + listingId.slice(0, 6);
+  for (var i = 0; i < S.images.length; i++) {
+    var cleanName = slugBase + '-' + (i + 1) + '.jpg';
+    imageNames.push(cleanName);
+    imageDataForStore.push({ name: cleanName, dataUrl: S.images[i].dataUrl });
+  }
+
+  // Store full image data in IndexedDB (survives refresh)
+  await idbSaveImages(listingId, imageDataForStore);
+
+  var listing = {};
+  for (var k in f) listing[k] = f[k];
+  listing.id = listingId;
+  listing.selected = false;
+  listing.createdAt = Date.now();
+  listing.imageNames = imageNames;
+  listing.thumbData = thumbData;
+
+  S.listings.push(listing);
+  saveLS();
+
+  // Reset
+  S.images = [];
+  S.form = defForm();
+  toast('Listing created!');
+  S.page = 'review';
+  render();
+  window.scrollTo(0, 0);
+}
+
+// ── EXPORT CSV + IMAGES ZIP ──
+async function expCSV() {
+  var sel = S.listings.filter(function(l) { return l.selected; });
+  if (!sel.length) { toast('Select listings to export', 'error'); return; }
+
+  // Ensure images are loaded from IndexedDB for all selected listings
+  toast('Preparing export...');
+  for (var si = 0; si < sel.length; si++) {
+    if (!imageStore[sel[si].id]) {
+      await idbLoadImages(sel[si].id);
+    }
+  }
+
+  var hasImages = sel.some(function(l) { return imageStore[l.id] && imageStore[l.id].length > 0; });
+
+  var h = ["Id","Title","Description","Price","Original Price","Brand","Category id","Size id","Condition","Color","Secondary color","Images","Quantity","Shipping weight","Shipping weight unit","Shipping height","Shipping width","Shipping length","Domestic shipping price","Worldwide shipping price","Free domestic shipping","Free worldwide shipping","Tags","SKU","Who made","When made","Smart pricing","Smart pricing price","Accept offers","Is auction","Auction starting price","Internal note"];
+
+  var rows = sel.map(function(l) {
+    var tags = (l.hashtags||'').split(',').map(function(t){return t.trim().replace(/^#/,'');}).filter(Boolean).join('|');
+    var imgs = (l.imageNames||[]).join('|');
+    return ['',l.title,l.description,l.price,l.originalPrice||'',l.brand,l.categoryId,l.sizeId,l.condition,l.color,l.secondaryColor||'',imgs,'1',l.shippingWeight||'',l.shippingWeightUnit||'Grams',l.shippingHeight||'',l.shippingWidth||'',l.shippingLength||'','','',l.freeShipping?'TRUE':'FALSE','FALSE',tags,'',l.whoMade||'SomeoneElse',l.whenMade||'From2000To2006','FALSE','',l.acceptOffers?'TRUE':'FALSE','FALSE','',l.internalNote||''].map(csvE).join(',');
+  });
+
+  var csv = [h.join(',')].concat(rows).join('\r\n');
+  var datestamp = new Date().toISOString().slice(0,10);
+
+  // 1. Always download the CSV
+  var csvBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var csvUrl = URL.createObjectURL(csvBlob);
+  var csvLink = document.createElement('a');
+  csvLink.href = csvUrl;
+  csvLink.download = 'crosslist-listings-' + datestamp + '.csv';
+  document.body.appendChild(csvLink); csvLink.click(); document.body.removeChild(csvLink);
+  URL.revokeObjectURL(csvUrl);
+
+  // 2. Build and download a separate ZIP of just the images
+  if (hasImages && typeof JSZip !== 'undefined') {
+    toast('Building images ZIP...');
+    try {
+      var zip = new JSZip();
+      var imgCount = 0;
+
+      sel.forEach(function(l) {
+        var imgs = imageStore[l.id];
+        if (imgs) {
+          imgs.forEach(function(img) {
+            var b64 = img.dataUrl.split(',')[1];
+            zip.file(img.name, b64, { base64: true });
+            imgCount++;
+          });
+        }
+      });
+
+      if (imgCount > 0) {
+        var zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+        // Small delay so browser handles both downloads
+        await new Promise(function(r) { setTimeout(r, 500); });
+        var zipUrl = URL.createObjectURL(zipBlob);
+        var zipLink = document.createElement('a');
+        zipLink.href = zipUrl;
+        zipLink.download = 'crosslist-images-' + datestamp + '.zip';
+        document.body.appendChild(zipLink); zipLink.click(); document.body.removeChild(zipLink);
+        URL.revokeObjectURL(zipUrl);
+        toast('Exported ' + sel.length + ' listing(s) — CSV + ' + imgCount + ' images ZIP!');
+      } else {
+        toast('Exported CSV — no images to bundle');
+      }
+    } catch (err) {
+      console.error('ZIP creation failed:', err);
+      toast('CSV downloaded, but ZIP failed: ' + err.message, 'error');
+    }
+  } else if (!hasImages) {
+    toast('Exported CSV — no images found for selected listings', 'error');
+  } else {
+    toast('Exported CSV — ZIP library not available', 'error');
+  }
+}
+
+// ── INIT ──
+// Load images from IndexedDB then render
+(async function() {
+  await idbLoadAll();
+  render();
+})();
+</script>
+</body>
+</html>
